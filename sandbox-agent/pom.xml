@@ -9,7 +9,7 @@
         <version>1.4.0</version>
     </parent>
     <artifactId>sandbox-agent</artifactId>
-    <name>sandbox-agent ${sandbox.version}</name>
+    <name>sandbox-agent-${sandbox.version}</name>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -21,26 +21,30 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <goals>
-                            <goal>attached</goal>
-                        </goals>
+                        <id>package</id>
                         <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                         <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <archive>
-                                <manifestEntries>
-                                    <Premain-Class>com.alibaba.jvm.sandbox.agent.AgentLauncher</Premain-Class>
-                                    <Agent-Class>com.alibaba.jvm.sandbox.agent.AgentLauncher</Agent-Class>
-                                    <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                                    <Can-Retransform-Classes>true</Can-Retransform-Classes>
-                                    <Can-Set-Native-Method-Prefix>true</Can-Set-Native-Method-Prefix>
-                                </manifestEntries>
-                            </archive>
+                            <tasks>
+                                <mkdir dir="${project.parent.basedir}/wukong/lib" />
+                                <copy todir = "${project.parent.basedir}/wukong/lib"
+                                      file = "target/${project.name}.jar">   </copy>
+                                <move  file="${project.parent.basedir}/wukong/lib/${project.name}.jar"
+                                       toFile="${project.parent.basedir}/wukong/lib/${project.artifactId}.jar"></move>
+                            </tasks>
                         </configuration>
                     </execution>
                 </executions>

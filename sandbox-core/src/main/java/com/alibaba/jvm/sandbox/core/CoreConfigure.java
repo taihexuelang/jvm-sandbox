@@ -2,6 +2,7 @@ package com.alibaba.jvm.sandbox.core;
 
 import com.alibaba.jvm.sandbox.api.Information;
 import com.alibaba.jvm.sandbox.core.util.FeatureCodec;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -38,6 +39,12 @@ public class CoreConfigure {
 
     private static final String KEY_UNSAFE_ENABLE = "unsafe.enable";
     private static final String KEY_NATIVE_SUPPORTED = "native.supported";
+    //插桩之后文件dump地址
+    private static final String DUMP_FILE_PATH = "dump.file.path";
+    //元数据存储的文件地址
+    private static final String META_FILE_PATH = "meta.file.path";
+    //需要收集元数据的模块id集合多个用，分割
+    private static final String NEED_META_MODULE_IDS = "need.meta.module.ids";
 
     // 受保护key数组，在保护key范围之内，以用户传递的配置为准，系统配置不允许覆盖
     private static final String[] PROTECT_KEY_ARRAY = {KEY_NAMESPACE, KEY_SANDBOX_HOME, KEY_LAUNCH_MODE, KEY_SERVER_IP, KEY_SERVER_PORT, KEY_SERVER_CHARSET};
@@ -47,7 +54,7 @@ public class CoreConfigure {
 
     private static final FeatureCodec codec = new FeatureCodec(';', '=');
 
-    private final Map<String, String> featureMap = new LinkedHashMap<>();
+    private static final Map<String, String> featureMap = new LinkedHashMap<>();
 
     private CoreConfigure(final String featureString,
                           final String propertiesFilePath) {
@@ -360,5 +367,23 @@ public class CoreConfigure {
     public boolean isNativeSupported() {
         return BooleanUtils.toBoolean(featureMap.get(KEY_NATIVE_SUPPORTED));
     }
+    //dump文件地址
+    public static String getDumpFilePath() {
+        return featureMap.get(DUMP_FILE_PATH);
+    }
 
+    //元数据文件地址
+    public static String getMetaFilePath() {
+        return featureMap.get(META_FILE_PATH);
+    }
+
+    //需要元数据的模块id集合
+    public static List<String> getNeedMetaModuleIds() {
+        String moduleIds = featureMap.get(NEED_META_MODULE_IDS);
+        if (StringUtils.isNoneBlank(moduleIds)) {
+            String[] moduleIdArray = moduleIds.split(",");
+            return Lists.newArrayList(moduleIdArray);
+        }
+        return null;
+    }
 }

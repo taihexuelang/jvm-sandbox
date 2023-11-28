@@ -10,7 +10,7 @@
         <relativePath>../sandbox-module-starter/pom.xml</relativePath>
     </parent>
     <artifactId>sandbox-debug-module</artifactId>
-    <name>sandbox-debug-module ${sandbox.version}</name>
+    <name>sandbox-debug-module-${sandbox.version}</name>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -19,6 +19,36 @@
 
     <build>
         <finalName>sandbox-debug-module-${sandbox.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <mkdir dir="${project.parent.parent.basedir}/wukong/module" />
+                                <copy todir = "${project.parent.parent.basedir}/wukong/module"
+                                      file = "target/${project.name}-jar-with-dependencies.jar">   </copy>
+                                <move  file="${project.parent.parent.basedir}/wukong/module/${project.name}-jar-with-dependencies.jar"
+                                       toFile="${project.parent.parent.basedir}/wukong/module/${project.artifactId}.jar"></move>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencies>
@@ -63,6 +93,11 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.71</version>
         </dependency>
 
     </dependencies>

@@ -1,6 +1,7 @@
 package com.alibaba.jvm.sandbox.core.enhance;
 
 import com.alibaba.jvm.sandbox.api.event.Event;
+import com.alibaba.jvm.sandbox.core.CoreConfigure;
 import com.alibaba.jvm.sandbox.core.enhance.weaver.asm.EventWeaver;
 import com.alibaba.jvm.sandbox.core.util.AsmUtils;
 import com.alibaba.jvm.sandbox.core.util.ObjectIDs;
@@ -71,7 +72,8 @@ public class EventEnhancer implements Enhancer {
         if (!isDumpClass) {
             return data;
         }
-        final File dumpClassFile = new File("./sandbox-class-dump/" + className + ".class");
+        String dumpClassFilePath = CoreConfigure.getDumpFilePath();
+        final File dumpClassFile = new File(dumpClassFilePath + className + ".class");
         final File classPath = new File(dumpClassFile.getParent());
 
         // 创建类所在的包路径

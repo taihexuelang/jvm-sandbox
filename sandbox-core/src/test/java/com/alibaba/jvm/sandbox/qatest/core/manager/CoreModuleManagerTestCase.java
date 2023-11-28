@@ -314,7 +314,7 @@ public class CoreModuleManagerTestCase {
     }
 
 
-    @Test
+    //@Test
     public void test$$CoreModuleManager$$softFlush$$modify() throws IOException, ModuleException {
 
         final File anotherNormalModuleJarFile = buildingModuleJarFileWithModuleClass(

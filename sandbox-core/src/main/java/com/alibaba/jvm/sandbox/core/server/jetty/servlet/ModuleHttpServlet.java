@@ -150,7 +150,7 @@ public class ModuleHttpServlet extends HttpServlet {
             method.setAccessible(isAccessible);
             coreModule.release(autoCloseResources);
         }
-
+        resp.sendError(HttpServletResponse.SC_OK);
     }
 
 

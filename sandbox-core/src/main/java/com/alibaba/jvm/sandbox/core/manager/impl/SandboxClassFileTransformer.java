@@ -3,7 +3,11 @@ package com.alibaba.jvm.sandbox.core.manager.impl;
 import com.alibaba.jvm.sandbox.api.event.Event;
 import com.alibaba.jvm.sandbox.api.event.Event.Type;
 import com.alibaba.jvm.sandbox.api.listener.EventListener;
+import com.alibaba.jvm.sandbox.core.CoreConfigure;
+import com.alibaba.jvm.sandbox.core.dto.ClassInfoDTO;
+import com.alibaba.jvm.sandbox.core.dto.MethodDTO;
 import com.alibaba.jvm.sandbox.core.enhance.EventEnhancer;
+import com.alibaba.jvm.sandbox.core.util.FileUtils;
 import com.alibaba.jvm.sandbox.core.util.ObjectIDs;
 import com.alibaba.jvm.sandbox.core.util.SandboxClassUtils;
 import com.alibaba.jvm.sandbox.core.util.SandboxProtector;
@@ -11,15 +15,26 @@ import com.alibaba.jvm.sandbox.core.util.matcher.Matcher;
 import com.alibaba.jvm.sandbox.core.util.matcher.MatchingResult;
 import com.alibaba.jvm.sandbox.core.util.matcher.UnsupportedMatcher;
 import com.alibaba.jvm.sandbox.core.util.matcher.structure.ClassStructure;
+import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
+import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.List;
 import java.util.Set;
 
 import static com.alibaba.jvm.sandbox.core.util.matcher.structure.ClassStructureFactory.createClassStructure;
 
+import static org.objectweb.asm.ClassReader.EXPAND_FRAMES;
+import static org.objectweb.asm.Opcodes.ASM7;
 /**
  * 沙箱类形变器
  *
@@ -139,6 +154,8 @@ public class SandboxClassFileTransformer implements ClassFileTransformer {
         // 匹配到的方法签名
         final Set<String> behaviorSignCodes = result.getBehaviorSignCodes();
 
+        //有效行的处理
+        doClassVaildLine(srcByteCodeArray, loader);
         // 开始进行类匹配
         try {
             final byte[] toByteCodeArray = new EventEnhancer(nativePrefix).toByteCodeArray(
@@ -153,7 +170,6 @@ public class SandboxClassFileTransformer implements ClassFileTransformer {
                 logger.debug("transform ignore {}, nothing changed in loader={}", internalClassName, loader);
                 return null;
             }
-
             // statistic affect
             affectStatistic.statisticAffect(loader, internalClassName, behaviorSignCodes);
 
@@ -228,5 +244,52 @@ public class SandboxClassFileTransformer implements ClassFileTransformer {
     public String getNativePrefix() {
         return nativePrefix;
     }
-
+    /**
+     * 获取有效行
+     *
+     * @param byteCodeArray
+     */
+    void doClassVaildLine(byte[] byteCodeArray,ClassLoader loader) {
+        //是否是需要处理的模块
+        if (CollectionUtils.isEmpty(CoreConfigure.getNeedMetaModuleIds())
+                || !CoreConfigure.getNeedMetaModuleIds().contains(uniqueId)) return;
+        ClassReader cr = new ClassReader(byteCodeArray);
+        //如果lineCoverModule模块则进行有效行计算，否则不尽兴
+        final String className = cr.getClassName();
+        if (!filterClass(className,loader)) return;
+        final ClassInfoDTO classInfoDTO = new ClassInfoDTO();
+        classInfoDTO.setClassName(className);
+        cr.accept(new ClassVisitor(ASM7) {
+                      @Override
+                      public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                          MethodVisitor vm = super.visitMethod(access, name, descriptor, signature, exceptions);
+                          //设置方法信息
+                          final MethodDTO methodDTO = new MethodDTO();
+                          methodDTO.setMethodName(name);
+                          methodDTO.setMethodDesc(descriptor);
+                          classInfoDTO.getMethodList().add(methodDTO);
+                          List<Integer> lines = Lists.newArrayList();
+                          return new MethodVisitor(ASM7, vm) {
+                              @Override
+                              public void visitLineNumber(int line, Label start) {
+                                  super.visitLineNumber(line, start);
+                                  //设置行信息
+                                  methodDTO.getLines().add(line);
+                              }
+                          };
+                      }
+                  },
+                EXPAND_FRAMES
+        );
+        //写入文件
+        FileUtils.fileWrite(classInfoDTO, new File(CoreConfigure.getMetaFilePath()));
+    }
+    //过滤掉指定模块
+    boolean filterClass(String className,ClassLoader loader){
+        URL url =  loader.getResource(className+".class");
+        if(url==null) return false;
+        String matchStr = "caseRunService";
+        if(url.getFile().contains(matchStr)) return true;
+        return false;
+    }
 }
