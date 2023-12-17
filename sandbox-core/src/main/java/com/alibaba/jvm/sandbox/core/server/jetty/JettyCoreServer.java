@@ -3,6 +3,7 @@ package com.alibaba.jvm.sandbox.core.server.jetty;
 import com.alibaba.jvm.sandbox.core.CoreConfigure;
 import com.alibaba.jvm.sandbox.core.JvmSandbox;
 import com.alibaba.jvm.sandbox.core.server.CoreServer;
+import com.alibaba.jvm.sandbox.core.server.jetty.servlet.BusinessHttpServlet;
 import com.alibaba.jvm.sandbox.core.server.jetty.servlet.ModuleHttpServlet;
 import com.alibaba.jvm.sandbox.core.server.jetty.servlet.WebSocketAcceptorServlet;
 import com.alibaba.jvm.sandbox.core.util.Initializer;
@@ -141,6 +142,12 @@ public class JettyCoreServer implements CoreServer {
         context.addServlet(
                 new ServletHolder(new ModuleHttpServlet(cfg, jvmSandbox.getCoreModuleManager())),
                 pathSpec
+        );
+        final String businessSpec = "/business/http/*";
+        logger.info("initializing http-handler. path={}", contextPath + businessSpec);
+        context.addServlet(
+                new ServletHolder(new BusinessHttpServlet(cfg, jvmSandbox.getCoreModuleManager())),
+                businessSpec
         );
 
         httpServer.setHandler(context);

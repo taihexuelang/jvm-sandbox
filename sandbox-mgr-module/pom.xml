@@ -10,7 +10,7 @@
         <relativePath>../sandbox-module-starter/pom.xml</relativePath>
     </parent>
     <artifactId>sandbox-mgr-module</artifactId>
-    <name>sandbox-mgr-module ${sandbox.version}</name>
+    <name>sandbox-mgr-module-${sandbox.version}</name>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -23,16 +23,38 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
                             <goal>attached</goal>
                         </goals>
                         <phase>package</phase>
+
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                         <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
+                            <tasks>
+                                <mkdir dir="${project.parent.parent.basedir}/wukong/module" />
+                                <copy todir = "${project.parent.parent.basedir}/wukong/module"
+                                      file = "target/${project.name}-jar-with-dependencies.jar">   </copy>
+                                <move  file="${project.parent.parent.basedir}/wukong/module/${project.name}-jar-with-dependencies.jar"
+                                       toFile="${project.parent.parent.basedir}/wukong/module/${project.artifactId}.jar"></move>
+                            </tasks>
                         </configuration>
                     </execution>
                 </executions>

@@ -124,7 +124,10 @@
             <artifactId>sandbox-spy</artifactId>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.alibaba.jvm.sandbox</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

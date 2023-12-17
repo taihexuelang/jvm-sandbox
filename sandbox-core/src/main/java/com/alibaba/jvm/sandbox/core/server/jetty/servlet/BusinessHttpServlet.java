@@ -3,11 +3,7 @@ package com.alibaba.jvm.sandbox.core.server.jetty.servlet;
 import com.alibaba.jvm.sandbox.api.annotation.Command;
 import com.alibaba.jvm.sandbox.api.http.Http;
 import com.alibaba.jvm.sandbox.core.CoreConfigure;
-import com.alibaba.jvm.sandbox.core.CoreModule;
-import com.alibaba.jvm.sandbox.core.CoreModule.ReleaseResource;
 import com.alibaba.jvm.sandbox.core.manager.CoreModuleManager;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -19,11 +15,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,19 +25,19 @@ import java.util.Map;
 import static com.alibaba.jvm.sandbox.api.util.GaStringUtils.matching;
 
 /**
- * 用于处理模块的HTTP请求
+ * 用于业务请求的HTTP请求
  *
  * @author luanjia@taobao.com
  */
-public class ModuleHttpServlet extends HttpServlet {
+public class BusinessHttpServlet extends HttpServlet {
     private static final String SLASH = "/";
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final CoreConfigure cfg;
     private final CoreModuleManager coreModuleManager;
 
-    public ModuleHttpServlet(final CoreConfigure cfg,
-                             final CoreModuleManager coreModuleManager) {
+    public BusinessHttpServlet(final CoreConfigure cfg,
+                               final CoreModuleManager coreModuleManager) {
         this.cfg = cfg;
         this.coreModuleManager = coreModuleManager;
     }
@@ -66,94 +60,20 @@ public class ModuleHttpServlet extends HttpServlet {
 
         // 获取请求路径
         final String path = req.getPathInfo();
-
-        // 获取模块ID
-        final String uniqueId = parseUniqueId(path);
-        if (StringUtils.isBlank(uniqueId)) {
-            logger.warn("path={} is not matched any module.", path);
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
+        if(path.contains("metaFile/info")){
+            File file = new File(CoreConfigure.getMetaFilePath());
+            OutputStream outputStream = resp.getOutputStream();
+            FileInputStream fileInputStream = new FileInputStream(file);
+           byte[] buf = new byte[4096];
+           int readLength;
+           while((readLength=fileInputStream.read(buf))>0){
+               outputStream.write(buf,0,readLength);
+           }
+           fileInputStream.close();
+            outputStream.flush();
+            outputStream.close();
         }
 
-        // 获取模块
-        final CoreModule coreModule = coreModuleManager.get(uniqueId);
-        if (null == coreModule) {
-            logger.warn("path={} is matched module {}, but not existed.", path, uniqueId);
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-
-        // 匹配对应的方法
-        final Method method = matchingModuleMethod(
-                path,
-                expectHttpMethod,
-                uniqueId,
-                coreModule.getModule().getClass()
-        );
-        if (null == method) {
-            logger.warn("path={} is not matched any method in module {}",
-                    path,
-                    uniqueId
-            );
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        } else {
-            logger.debug("path={} is matched method {} in module {}", path, method.getName(), uniqueId);
-        }
-
-        // 自动释放I/O资源
-        final List<Closeable> autoCloseResources = coreModule.append(new ReleaseResource<List<Closeable>>(new ArrayList<>()) {
-            @Override
-            public void release() {
-                final List<Closeable> closeables = get();
-                if (CollectionUtils.isEmpty(closeables)) {
-                    return;
-                }
-                for (final Closeable closeable : get()) {
-                    if (closeable instanceof Flushable) {
-                        try {
-                            ((Flushable) closeable).flush();
-                        } catch (Exception cause) {
-                            logger.warn("path={} flush I/O occur error!", path, cause);
-                        }
-                    }
-                    IOUtils.closeQuietly(closeable);
-                }
-            }
-        });
-
-        // 生成方法调用参数
-        final Object[] parameterObjectArray = generateParameterObjectArray(autoCloseResources, method, req, resp);
-
-        final boolean isAccessible = method.isAccessible();
-        final ClassLoader oriThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            method.setAccessible(true);
-            Thread.currentThread().setContextClassLoader(coreModule.getLoader());
-            Object result = method.invoke(coreModule.getModule(), parameterObjectArray);
-            logger.debug("path={} invoke module {} method {} success.", path, uniqueId, method.getName());
-        } catch (IllegalAccessException iae) {
-            logger.warn("path={} invoke module {} method {} occur access denied.", path, uniqueId, method.getName(), iae);
-            throw new ServletException(iae);
-        } catch (InvocationTargetException ite) {
-            logger.warn("path={} invoke module {} method {} occur error.", path, uniqueId, method.getName(), ite.getTargetException());
-            final Throwable targetCause = ite.getTargetException();
-            if (targetCause instanceof ServletException) {
-                throw (ServletException) targetCause;
-            }
-            if (targetCause instanceof IOException) {
-                throw (IOException) targetCause;
-            }
-            throw new ServletException(targetCause);
-        } finally {
-            Thread.currentThread().setContextClassLoader(oriThreadContextClassLoader);
-            method.setAccessible(isAccessible);
-            coreModule.release(autoCloseResources);
-        }
-        OutputStream outputStream = resp.getOutputStream();
-        outputStream.write("处理成功".getBytes());
-        outputStream.flush();
-        outputStream.close();
 
     }
 

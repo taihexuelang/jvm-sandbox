@@ -4,8 +4,6 @@ import com.alibaba.jvm.sandbox.api.event.Event;
 import com.alibaba.jvm.sandbox.api.event.Event.Type;
 import com.alibaba.jvm.sandbox.api.listener.EventListener;
 import com.alibaba.jvm.sandbox.core.CoreConfigure;
-import com.alibaba.jvm.sandbox.core.dto.ClassInfoDTO;
-import com.alibaba.jvm.sandbox.core.dto.MethodDTO;
 import com.alibaba.jvm.sandbox.core.enhance.EventEnhancer;
 import com.alibaba.jvm.sandbox.core.util.FileUtils;
 import com.alibaba.jvm.sandbox.core.util.ObjectIDs;
@@ -15,6 +13,8 @@ import com.alibaba.jvm.sandbox.core.util.matcher.Matcher;
 import com.alibaba.jvm.sandbox.core.util.matcher.MatchingResult;
 import com.alibaba.jvm.sandbox.core.util.matcher.UnsupportedMatcher;
 import com.alibaba.jvm.sandbox.core.util.matcher.structure.ClassStructure;
+import com.dto.ClassInfoDTO;
+import com.dto.MethodDTO;
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.objectweb.asm.ClassReader;
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Set;
 
 import static com.alibaba.jvm.sandbox.core.util.matcher.structure.ClassStructureFactory.createClassStructure;
-
 import static org.objectweb.asm.ClassReader.EXPAND_FRAMES;
 import static org.objectweb.asm.Opcodes.ASM7;
 /**
@@ -288,7 +287,7 @@ public class SandboxClassFileTransformer implements ClassFileTransformer {
     boolean filterClass(String className,ClassLoader loader){
         URL url =  loader.getResource(className+".class");
         if(url==null) return false;
-        String matchStr = "caseRunService";
+        String matchStr = "test";
         if(url.getFile().contains(matchStr)) return true;
         return false;
     }

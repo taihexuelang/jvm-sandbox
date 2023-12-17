@@ -167,7 +167,7 @@ public class DefaultModuleEventWatcher implements ModuleEventWatcher {
     }
 
     // 这里是用matcher重制过后的watch
-    private int watch(final Matcher matcher,
+    private int  watch(final Matcher matcher,
                       final EventListener listener,
                       final Progress progress,
                       final Event.Type... eventType) {
