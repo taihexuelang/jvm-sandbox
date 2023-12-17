@@ -1,6 +1,5 @@
 package com.alibaba.jvm.sandbox.module.debug;
 
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.jvm.sandbox.api.Information;
 import com.alibaba.jvm.sandbox.api.Module;
 import com.alibaba.jvm.sandbox.api.annotation.Command;
